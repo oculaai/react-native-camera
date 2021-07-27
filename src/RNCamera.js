@@ -255,6 +255,7 @@ type PropsType = typeof View.props & {
   onCameraReady?: Function,
   onAudioInterrupted?: Function,
   onAudioConnected?: Function,
+  onExposureChange?: Function,
   onStatusChange?: Function,
   onBarCodeRead?: Function,
   onPictureTaken?: Function,
@@ -404,6 +405,7 @@ export default class Camera extends React.Component<PropsType, StateType> {
     onCameraReady: PropTypes.func,
     onAudioInterrupted: PropTypes.func,
     onAudioConnected: PropTypes.func,
+    onExposureChange: PropTypes.func,
     onStatusChange: PropTypes.func,
     onBarCodeRead: PropTypes.func,
     onPictureTaken: PropTypes.func,
@@ -851,6 +853,7 @@ export default class Camera extends React.Component<PropsType, StateType> {
             onCameraReady={this._onObjectDetected(this._onCameraReady)}
             onAudioInterrupted={this._onAudioInterrupted}
             onAudioConnected={this._onAudioConnected}
+            onExposureChange={this._onObjectDetected(this.props.onExposureChange)}
             onGoogleVisionBarcodesDetected={this._onObjectDetected(
               this.props.onGoogleVisionBarcodesDetected,
             )}
@@ -932,6 +935,7 @@ const RNCamera = requireNativeComponent('RNCamera', Camera, {
     onCameraReady: true,
     onAudioInterrupted: true,
     onAudioConnected: true,
+    onExposureChange: true,
     onPictureSaved: true,
     onFaceDetected: true,
     onTouch: true,

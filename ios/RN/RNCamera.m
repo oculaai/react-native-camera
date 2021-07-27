@@ -10,6 +10,9 @@
 #import "RNSensorOrientationChecker.h"
 #import "RNCustomWhiteBalanceSettings.h"
 
+static void * ExposureDurationContext = &ExposureDurationContext;
+static void * ISOContext = &ISOContext;
+
 @interface RNCamera ()
 
 @property (nonatomic, weak) RCTBridge *bridge;
@@ -25,6 +28,7 @@
 @property (nonatomic, copy) RCTDirectEventBlock onCameraReady;
 @property (nonatomic, copy) RCTDirectEventBlock onAudioInterrupted;
 @property (nonatomic, copy) RCTDirectEventBlock onAudioConnected;
+@property (nonatomic, copy) RCTDirectEventBlock onExposureChange;
 @property (nonatomic, copy) RCTDirectEventBlock onMountError;
 @property (nonatomic, copy) RCTDirectEventBlock onBarCodeRead;
 @property (nonatomic, copy) RCTDirectEventBlock onTouch;
@@ -1358,6 +1362,7 @@ BOOL _sessionInterrupted = NO;
         [self setupOrDisableBarcodeScanner];
 
         _sessionInterrupted = NO;
+        [self addObservers];
         [self.session startRunning];
         [self onReady:nil];
     });
@@ -1380,6 +1385,7 @@ BOOL _sessionInterrupted = NO;
         }
         [self.previewLayer removeFromSuperlayer];
         [self.session commitConfiguration];
+        [self removeObservers];
         [self.session stopRunning];
 
         for (AVCaptureInput *input in self.session.inputs) {
@@ -1582,7 +1588,7 @@ BOOL _sessionInterrupted = NO;
             [self.session addInput:captureDeviceInput];
 
             self.videoCaptureDeviceInput = captureDeviceInput;
-
+            self.videoDevice = captureDeviceInput.device;
             // Update all these async after our session has commited
             // since some values might be changed on session commit.
             dispatch_async(self.sessionQueue, ^{
@@ -2309,6 +2315,36 @@ BOOL _sessionInterrupted = NO;
 
 - (bool)isRecording {
     return self.movieFileOutput != nil ? self.movieFileOutput.isRecording : NO;
+}
+
+- (void)addObservers
+{
+    [self addObserver:self forKeyPath:@"videoDevice.exposureDuration" options:NSKeyValueObservingOptionNew context:ExposureDurationContext];
+    [self addObserver:self forKeyPath:@"videoDevice.ISO" options:NSKeyValueObservingOptionNew context:ISOContext];
+}
+
+- (void)removeObservers
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [self removeObserver:self forKeyPath:@"videoDevice.exposureDuration" context:ExposureDurationContext];
+    [self removeObserver:self forKeyPath:@"videoDevice.ISO" context:ISOContext];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    id newValue = change[NSKeyValueChangeNewKey];
+    if ((context == ExposureDurationContext || context == ISOContext) && newValue && newValue != [NSNull null]) {
+        double exposureDuration = CMTimeGetSeconds(self.videoDevice.exposureDuration);
+        if(self.onExposureChange){
+            self.onExposureChange(@{
+                @"exposureDuration":@(exposureDuration),
+                @"lensAperture": @(self.videoDevice.lensAperture),
+                @"iso":@(self.videoDevice.ISO),
+            });
+        }
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
 }
 
 @end
