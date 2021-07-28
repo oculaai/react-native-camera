@@ -12,7 +12,8 @@
 
 @interface RNCamera : UIView <AVCaptureMetadataOutputObjectsDelegate,
                               AVCaptureFileOutputRecordingDelegate,
-                              AVCaptureVideoDataOutputSampleBufferDelegate>
+                              AVCaptureVideoDataOutputSampleBufferDelegate,
+                              AVCaptureAudioDataOutputSampleBufferDelegate>
 
 @property(nonatomic, strong) dispatch_queue_t sessionQueue;
 @property(nonatomic, strong) AVCaptureSession *session;
@@ -23,7 +24,10 @@
 @property(nonatomic, strong) AVCaptureMovieFileOutput *movieFileOutput;
 @property(nonatomic, strong) AVCaptureMetadataOutput *metadataOutput;
 @property(nonatomic, strong) AVCaptureVideoDataOutput *videoDataOutput;
+@property(nonatomic, strong) AVCaptureAudioDataOutput *audioDataOutput;
 @property(nonatomic, strong) AVCaptureVideoPreviewLayer *previewLayer;
+@property(nonatomic, strong) NSTimer *audioDataTimer;
+@property(nonatomic, assign) NSTimeInterval audioDataInterval;
 @property(nonatomic, strong) id runtimeErrorHandlingObserver;
 @property(nonatomic, strong) NSArray *barCodeTypes;
 @property(nonatomic, strong) NSArray *googleVisionBarcodeTypes;
@@ -72,6 +76,7 @@
 - (void)updateExposure;
 - (void)updatePictureSize;
 - (void)updateCaptureAudio;
+- (void)startFetchAudioLevel;
 // Face Detection props
 - (void)updateTrackingEnabled:(id)requestedTracking;
 - (void)updateFaceDetectionMode:(id)requestedMode;

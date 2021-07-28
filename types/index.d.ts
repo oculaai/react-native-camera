@@ -210,7 +210,15 @@ export interface RNCameraProps {
   /** iOS only */
   onAudioInterrupted?(): void;
   onAudioConnected?(): void;
-  onExposureChange?(): void;
+  onAudioLevelChange?(response: { 
+    averagePowerLevel: number,
+    peakHoldLevel: number,
+   }): void;
+  onExposureChange?(response: {
+    exposureDuration: number,
+    lensAperture: number,
+    iso: number,
+  }): void;
   onTap?(origin: Point): void;
   onDoubleTap?(origin: Point): void;
   /** Use native pinch to zoom implementation*/
@@ -224,7 +232,7 @@ export interface RNCameraProps {
   maxZoom?: number;
   /** Value: float from 0 to 1.0 */
   focusDepth?: number;
-
+  audioDataInterval?: number
   // -- BARCODE PROPS
   detectedImageInEvent?: boolean;
   barCodeTypes?: Array<keyof BarCodeType>;

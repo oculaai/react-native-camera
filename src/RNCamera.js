@@ -252,6 +252,8 @@ type PropsType = typeof View.props & {
   ratio?: string,
   focusDepth?: number,
   type?: number | string,
+  audioDataInterval?: number,
+  onAudioLevelChange?: Function,
   onCameraReady?: Function,
   onAudioInterrupted?: Function,
   onAudioConnected?: Function,
@@ -401,11 +403,13 @@ export default class Camera extends React.Component<PropsType, StateType> {
     maxZoom: PropTypes.number,
     ratio: PropTypes.string,
     focusDepth: PropTypes.number,
+    audioDataInterval: PropTypes.number,
     onMountError: PropTypes.func,
     onCameraReady: PropTypes.func,
     onAudioInterrupted: PropTypes.func,
     onAudioConnected: PropTypes.func,
     onExposureChange: PropTypes.func,
+    onAudioLevelChange: PropTypes.func,
     onStatusChange: PropTypes.func,
     onBarCodeRead: PropTypes.func,
     onPictureTaken: PropTypes.func,
@@ -460,6 +464,7 @@ export default class Camera extends React.Component<PropsType, StateType> {
     maxZoom: 0,
     ratio: '4:3',
     focusDepth: 0,
+    audioDataInterval: 100,
     type: CameraManager.Type.back,
     cameraId: '',
     autoFocus: CameraManager.AutoFocus.on,
@@ -854,6 +859,7 @@ export default class Camera extends React.Component<PropsType, StateType> {
             onAudioInterrupted={this._onAudioInterrupted}
             onAudioConnected={this._onAudioConnected}
             onExposureChange={this._onObjectDetected(this.props.onExposureChange)}
+            onAudioLevelChange={this._onObjectDetected(this.props.onAudioLevelChange)}
             onGoogleVisionBarcodesDetected={this._onObjectDetected(
               this.props.onGoogleVisionBarcodesDetected,
             )}
@@ -936,6 +942,7 @@ const RNCamera = requireNativeComponent('RNCamera', Camera, {
     onAudioInterrupted: true,
     onAudioConnected: true,
     onExposureChange: true,
+    onAudioLevelChange: true,
     onPictureSaved: true,
     onFaceDetected: true,
     onTouch: true,
