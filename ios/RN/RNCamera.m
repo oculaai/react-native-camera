@@ -28,6 +28,7 @@ static void * ISOContext = &ISOContext;
 @property (nonatomic, copy) RCTDirectEventBlock onCameraReady;
 @property (nonatomic, copy) RCTDirectEventBlock onAudioInterrupted;
 @property (nonatomic, copy) RCTDirectEventBlock onAudioConnected;
+@property (nonatomic, copy) RCTDirectEventBlock onAudioLevelChange;
 @property (nonatomic, copy) RCTDirectEventBlock onExposureChange;
 @property (nonatomic, copy) RCTDirectEventBlock onMountError;
 @property (nonatomic, copy) RCTDirectEventBlock onBarCodeRead;
@@ -1441,6 +1442,14 @@ BOOL _sessionInterrupted = NO;
                 if(self.onAudioConnected){
                     self.onAudioConnected(nil);
                 }
+                
+                AVCaptureAudioDataOutput *audioDataOutput = [[AVCaptureAudioDataOutput alloc] init];
+                [audioDataOutput setSampleBufferDelegate:self queue:self.sessionQueue];
+                if ([self.session canAddOutput:audioDataOutput]) {
+                    [self.session addOutput:audioDataOutput];
+                    self.audioDataOutput = audioDataOutput;
+                    [self startFetchAudioLevel];
+                }
             }
             else{
                 RCTLog(@"Cannot add audio input");
@@ -1460,6 +1469,7 @@ BOOL _sessionInterrupted = NO;
 // recording in progress with the appropriate flags.
 - (void)removeAudioCaptureSessionInput
 {
+    [self.audioDataTimer invalidate];
     if(self.audioCaptureDeviceInput != nil){
 
         BOOL audioRemoved = NO;
@@ -2347,4 +2357,34 @@ BOOL _sessionInterrupted = NO;
     }
 }
 
+- (void)startFetchAudioLevel
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.audioDataTimer invalidate];
+        if (@available(iOS 10.0, *)) {
+            self.audioDataTimer = [NSTimer scheduledTimerWithTimeInterval:self.audioDataInterval > 0 ? self.audioDataInterval : 0.1
+                                                                  repeats:YES
+                                                                    block:^(NSTimer * _Nonnull timer) {
+                NSArray *connections = self.audioDataOutput.connections;
+                if ([connections count] > 0) {
+                    // There should be only one connection to an AVCaptureAudioDataOutput.
+                    AVCaptureConnection *connection = [connections objectAtIndex:0];
+                    
+                    NSArray *audioChannels = connection.audioChannels;
+                    
+                    for (AVCaptureAudioChannel *channel in audioChannels) {
+                        if(self.onAudioLevelChange){
+                            self.onAudioLevelChange(@{
+                                @"averagePowerLevel":@(channel.averagePowerLevel),
+                                @"peakHoldLevel": @(channel.peakHoldLevel),
+                                                    });
+                        }
+                    }
+                }
+            }];
+        } else {
+            // Fallback on earlier versions
+        }
+    });
+}
 @end
