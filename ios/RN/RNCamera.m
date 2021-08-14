@@ -381,15 +381,15 @@ BOOL _sessionInterrupted = NO;
     if(device == nil) {
         return;
     }
-
-    if (self.flashMode == RNCameraFlashModeTorch) {
+    if (self.flashMode > 3 ) {
         if (![device hasTorch] || ![device isTorchModeSupported:AVCaptureTorchModeOn]) {
             RCTLogWarn(@"%s: device doesn't support torch mode", __func__);
             return;
         }
+
         [self lockDevice:device andApplySettings:^{
             [device setFlashMode:AVCaptureFlashModeOff];
-            [device setTorchMode:AVCaptureTorchModeOn];
+            [device setTorchModeOnWithLevel:roundf((((float)self.flashMode - 3.0) / 10.0) * 10)/10 error:nil];
         }];
     } else {
         if (![device hasFlash] || ![device isFlashModeSupported:self.flashMode]) {
