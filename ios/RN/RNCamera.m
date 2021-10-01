@@ -439,6 +439,28 @@ BOOL _sessionInterrupted = NO;
     }
 }
 
+- (void)forceTurnOffTorch
+{
+    AVCaptureDevice *device = [self.videoCaptureDeviceInput device];
+    if(device == nil) {
+        return;
+    }
+    if (![device hasTorch] || ![device isTorchModeSupported:AVCaptureTorchModeOn]) {
+        RCTLogWarn(@"%s: device doesn't support torch mode", __func__);
+        return;
+    }
+
+    [self lockDevice:device andApplySettings:^{
+        if ([device isTorchActive]) {
+            [device setTorchMode:AVCaptureTorchModeOff];
+        }
+//        [device setFlashMode:AVCaptureFlashModeOff];
+        self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+        RCTLog(@"torchOffTiemstamp %@%@", self.torchOffTimestamp);
+    }];
+}
+
+
 // Function to cleanup focus listeners and variables on device
 // change. This is required since "defocusing" might not be
 // possible on the new device, and our device reference will be
@@ -1181,6 +1203,8 @@ BOOL _sessionInterrupted = NO;
         if (options[@"maxDuration"]) {
             Float64 maxDuration = [options[@"maxDuration"] floatValue];
             self.movieFileOutput.maxRecordedDuration = CMTimeMakeWithSeconds(maxDuration, 30);
+            
+            NSLog(@"torch_check_duration log: %f", maxDuration);
         }
 
         if (options[@"maxFileSize"]) {
@@ -1271,14 +1295,17 @@ BOOL _sessionInterrupted = NO;
             path = [RNFileSystem generatePathInDirectory:[[RNFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"Camera"] withExtension:@".mov"];
         }
         
-        NSArray *torchPeriod = nil;
-        if (options[@"torchPeriod"]) {
-            torchPeriod = options[@"torchPeriod"];
+        NSNumber *torchOnAt = nil;
+        if (options[@"torchOnAt"]) {
+            torchOnAt = options[@"torchOnAt"];
             
-            NSLog(@"torchPeriod log: %@", torchPeriod);
+//            NSLog(@"torch_OnAt log: %@", torchOnAt);
         }
-        else {
-            torchPeriod = nil;
+        NSNumber *torchOffAt = nil;
+        if (options[@"torchOffAt"]) {
+            torchOffAt = options[@"torchOffAt"];
+            
+//            NSLog(@"torch_OffAt log: %@", torchOnAt);
         }
 
         if ([options[@"mirrorVideo"] boolValue]) {
@@ -1344,10 +1371,32 @@ BOOL _sessionInterrupted = NO;
         
         // delay torch update after 1 second the recording start
         double torchDelayInSeconds = 1.5;
-        dispatch_time_t popTimeOfTorch = dispatch_time(DISPATCH_TIME_NOW, torchDelayInSeconds * NSEC_PER_SEC);
         
+        if (torchOnAt != nil) {
+//            NSLog(@"torch_DelayInSeconds_not nil log");
+            if (torchOnAt.intValue == 3) {
+                torchDelayInSeconds = 3.5;
+//                NSLog(@"torch_DelayInSeconds_reassigned log");
+            }
+        }
+        
+        NSLog(@"torch_DelayInSeconds log: %f", torchDelayInSeconds);
+        NSLog(@"torch_Period log: %@", torchOnAt);
+        
+        dispatch_time_t popTimeOfTorch = dispatch_time(DISPATCH_TIME_NOW, torchDelayInSeconds * NSEC_PER_SEC);
         dispatch_after(popTimeOfTorch, self.sessionQueue, ^{
             [self updateFlashMode];
+        });
+        
+        double forceTorchOffDelayInSeconds = 6.5;
+        if (torchOffAt != nil) {
+            if (torchOffAt.intValue == 8) {
+                torchDelayInSeconds = 8.5;
+            }
+        }
+        dispatch_time_t timeForceTorchOff = dispatch_time(DISPATCH_TIME_NOW, forceTorchOffDelayInSeconds * NSEC_PER_SEC);
+        dispatch_after(timeForceTorchOff, self.sessionQueue, ^{
+            [self forceTurnOffTorch];
         });
     });
 }
