@@ -64,6 +64,10 @@
 @property(assign, nonatomic, nullable) NSNumber *defaultVideoQuality;
 @property(assign, nonatomic, nullable) NSNumber *deviceOrientation;
 @property(assign, nonatomic, nullable) NSNumber *orientation;
+@property(atomic, nullable) NSNumber *startRecordingTimestamp;
+@property(atomic, nullable) NSNumber *endRecordingTimestamp;
+@property(atomic, nullable) NSNumber *torchOnTimestamp;
+@property(atomic, nullable) NSNumber *torchOffTimestamp;
 
 - (id)initWithBridge:(RCTBridge *)bridge;
 - (void)updateType;
@@ -113,6 +117,7 @@
 - (void)onFacesDetected:(NSDictionary *)event;
 - (void)onPictureTaken:(NSDictionary *)event;
 - (void)onPictureSaved:(NSDictionary *)event;
+//- (void)onTorchChange:(NSDictionary *)event;
 - (void)onRecordingStart:(NSDictionary *)event;
 - (void)onRecordingEnd:(NSDictionary *)event;
 - (void)onText:(NSDictionary *)event;

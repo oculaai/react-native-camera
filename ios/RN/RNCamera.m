@@ -30,6 +30,7 @@ static void * ISOContext = &ISOContext;
 @property (nonatomic, copy) RCTDirectEventBlock onAudioConnected;
 @property (nonatomic, copy) RCTDirectEventBlock onAudioLevelChange;
 @property (nonatomic, copy) RCTDirectEventBlock onExposureChange;
+//@property (nonatomic, copy) RCTDirectEventBlock onTorchChange;
 @property (nonatomic, copy) RCTDirectEventBlock onMountError;
 @property (nonatomic, copy) RCTDirectEventBlock onBarCodeRead;
 @property (nonatomic, copy) RCTDirectEventBlock onTouch;
@@ -96,6 +97,11 @@ BOOL _sessionInterrupted = NO;
         self.invertImageData = true;
         _recordRequested = NO;
         _sessionInterrupted = NO;
+        
+        self.startRecordingTimestamp = nil;
+        self.endRecordingTimestamp = nil;
+        self.torchOnTimestamp = nil;
+        self.torchOffTimestamp = nil;
 
         // we will do other initialization after
         // the view is loaded.
@@ -205,6 +211,13 @@ BOOL _sessionInterrupted = NO;
         _onPictureSaved(event);
     }
 }
+
+//- (void)onTorchChange:(NSDictionary *)event
+//{
+//    if (_onTorchChange) {
+//        _onTorchChange(event);
+//    }
+//}
 
 - (void)onRecordingStart:(NSDictionary *)event
 {
@@ -381,11 +394,15 @@ BOOL _sessionInterrupted = NO;
     if(device == nil) {
         return;
     }
-    if (self.flashMode > 3 ) {
+    if (self.flashMode > 3 && self.movieFileOutput.isRecording ) {
         if (![device hasTorch] || ![device isTorchModeSupported:AVCaptureTorchModeOn]) {
             RCTLogWarn(@"%s: device doesn't support torch mode", __func__);
             return;
         }
+        
+        self.torchOnTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+        
+        RCTLog(@"torchOnTiemstamp %s", self.torchOnTimestamp);
 
         [self lockDevice:device andApplySettings:^{
             [device setFlashMode:AVCaptureFlashModeOff];
@@ -402,6 +419,22 @@ BOOL _sessionInterrupted = NO;
                 [device setTorchMode:AVCaptureTorchModeOff];
             }
             [device setFlashMode:self.flashMode];
+//            [device setFlashMode:AVCaptureFlashModeOff];
+            self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+            RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
+            
+            
+//            [self sendEventWithName:@"onTorchChange" body:@{@"flashMode": @([self.flashMode])}];
+            
+//            [self onTorchChange:@{
+//                @"flashMode": @(self.flashMode),
+//            }];
+            
+//            if(self.onTorchChange){
+//                self.onTorchChange(@{
+//                    @"flashMode": @(self.flashMode),
+//                });
+//            }
         }];
     }
 }
@@ -1237,6 +1270,16 @@ BOOL _sessionInterrupted = NO;
         else {
             path = [RNFileSystem generatePathInDirectory:[[RNFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"Camera"] withExtension:@".mov"];
         }
+        
+        NSArray *torchPeriod = nil;
+        if (options[@"torchPeriod"]) {
+            torchPeriod = options[@"torchPeriod"];
+            
+            NSLog(@"torchPeriod log: %@", torchPeriod);
+        }
+        else {
+            torchPeriod = nil;
+        }
 
         if ([options[@"mirrorVideo"] boolValue]) {
             if ([connection isVideoMirroringSupported]) {
@@ -1250,7 +1293,7 @@ BOOL _sessionInterrupted = NO;
 
         // and update flash in case it was turned off automatically
         // due to session/preset changes
-        [self updateFlashMode];
+//        [self updateFlashMode];
 
         // after everything is set, start recording with a tiny delay
         // to ensure the camera already has focus and exposure set.
@@ -1270,7 +1313,17 @@ BOOL _sessionInterrupted = NO;
                 [self.movieFileOutput startRecordingToOutputFileURL:outputURL recordingDelegate:self];
                 self.videoRecordedResolve = resolve;
                 self.videoRecordedReject = reject;
+                
+                self.startRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+                
+                NSLog(@"startRecordingTimestamp log: %@", self.startRecordingTimestamp);
 
+                
+//                NSLog(@"onRecordingStart event log: %@", @{
+//                    @"uri": outputURL.absoluteString,
+//                    @"videoOrientation": @([self.orientation integerValue]),
+//                    @"deviceOrientation": @([self.deviceOrientation integerValue])
+//                });
                 [self onRecordingStart:@{
                     @"uri": outputURL.absoluteString,
                     @"videoOrientation": @([self.orientation integerValue]),
@@ -1287,7 +1340,15 @@ BOOL _sessionInterrupted = NO;
             _recordRequested = NO;
         });
 
-
+        // TODO
+        
+        // delay torch update after 1 second the recording start
+        double torchDelayInSeconds = 1.5;
+        dispatch_time_t popTimeOfTorch = dispatch_time(DISPATCH_TIME_NOW, torchDelayInSeconds * NSEC_PER_SEC);
+        
+        dispatch_after(popTimeOfTorch, self.sessionQueue, ^{
+            [self updateFlashMode];
+        });
     });
 }
 
@@ -1295,6 +1356,10 @@ BOOL _sessionInterrupted = NO;
 {
     dispatch_async(self.sessionQueue, ^{
         if ([self.movieFileOutput isRecording]) {
+            self.endRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+            RCTLogWarn(@"endRecordingTimestamp @", self.endRecordingTimestamp);
+            
+
             [self.movieFileOutput stopRecording];
             [self onRecordingEnd:@{}];
         } else {
@@ -1947,6 +2012,13 @@ BOOL _sessionInterrupted = NO;
         }
     }
     if (success && self.videoRecordedResolve != nil) {
+        self.endRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+        RCTLogWarn(@"endRecordingTimestamp_2 @", self.endRecordingTimestamp);
+        
+        
+        self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+        RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
+        
         NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
 
         void (^resolveBlock)(void) = ^() {
@@ -1957,6 +2029,11 @@ BOOL _sessionInterrupted = NO;
         result[@"videoOrientation"] = @([self.orientation integerValue]);
         result[@"deviceOrientation"] = @([self.deviceOrientation integerValue]);
         result[@"isRecordingInterrupted"] = @(self.isRecordingInterrupted);
+        
+        result[@"recordingStart"] = @([self.startRecordingTimestamp integerValue]);
+        result[@"recordingEnd"] = @([self.endRecordingTimestamp integerValue]);
+        result[@"torchOn"] = @([self.torchOnTimestamp integerValue]);
+        result[@"torchOff"] = @([self.torchOffTimestamp integerValue]);
 
 
         if (@available(iOS 10, *)) {
@@ -1991,6 +2068,11 @@ BOOL _sessionInterrupted = NO;
     self.deviceOrientation = nil;
     self.orientation = nil;
     self.isRecordingInterrupted = NO;
+    
+    self.startRecordingTimestamp = nil;
+    self.endRecordingTimestamp = nil;
+    self.torchOnTimestamp = nil;
+    self.torchOffTimestamp = nil;
 
     if ([self.textDetector isRealDetector] || [self.faceDetector isRealDetector]) {
         [self cleanupMovieFileCapture];
