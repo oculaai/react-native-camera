@@ -28,7 +28,9 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
     EVENT_ON_PICTURE_SAVED("onPictureSaved"),
     EVENT_ON_RECORDING_START("onRecordingStart"),
     EVENT_ON_RECORDING_END("onRecordingEnd"),
-    EVENT_ON_TOUCH("onTouch");
+    EVENT_ON_TOUCH("onTouch"),
+    EVENT_ON_EXPOSURE_CHANGE("onExposureChange"),
+    EVENT_ON_AUDIO_LEVEL_CHANGE("onAudioLevelChange");
 
 
     private final String mName;
