@@ -439,7 +439,30 @@ BOOL _sessionInterrupted = NO;
     }
 }
 
-- (void)forceTurnOffTorch
+- (void)turnOnTorch
+{
+    AVCaptureDevice *device = [self.videoCaptureDeviceInput device];
+    if(device == nil) {
+        return;
+    }
+    if (self.flashMode > 3 && self.movieFileOutput.isRecording ) {
+        if (![device hasTorch] || ![device isTorchModeSupported:AVCaptureTorchModeOn]) {
+            RCTLogWarn(@"%s: device doesn't support torch mode", __func__);
+            return;
+        }
+        
+        self.torchOnTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+        
+        RCTLog(@"torchOnTiemstamp %s", self.torchOnTimestamp);
+
+        [self lockDevice:device andApplySettings:^{
+            [device setFlashMode:AVCaptureFlashModeOff];
+            [device setTorchModeOnWithLevel:roundf((((float)self.flashMode - 3.0) / 10.0) * 10)/10 error:nil];
+        }];
+    }
+}
+
+- (void)turnOffTorch
 {
     AVCaptureDevice *device = [self.videoCaptureDeviceInput device];
     if(device == nil) {
@@ -1307,6 +1330,10 @@ BOOL _sessionInterrupted = NO;
             
 //            NSLog(@"torch_OffAt log: %@", torchOnAt);
         }
+        NSNumber *scanDuration = nil;
+        if (options[@"maxDuration"]) {
+            scanDuration = options[@"maxDuration"];
+        }
 
         if ([options[@"mirrorVideo"] boolValue]) {
             if ([connection isVideoMirroringSupported]) {
@@ -1385,7 +1412,7 @@ BOOL _sessionInterrupted = NO;
         
         dispatch_time_t popTimeOfTorch = dispatch_time(DISPATCH_TIME_NOW, torchDelayInSeconds * NSEC_PER_SEC);
         dispatch_after(popTimeOfTorch, self.sessionQueue, ^{
-            [self updateFlashMode];
+            [self turnOnTorch];
         });
         
         double forceTorchOffDelayInSeconds = 6.5;
@@ -1396,7 +1423,11 @@ BOOL _sessionInterrupted = NO;
         }
         dispatch_time_t timeForceTorchOff = dispatch_time(DISPATCH_TIME_NOW, forceTorchOffDelayInSeconds * NSEC_PER_SEC);
         dispatch_after(timeForceTorchOff, self.sessionQueue, ^{
-            [self forceTurnOffTorch];
+            if (scanDuration != nil) {
+                if (scanDuration.intValue > 14) {
+                    [self turnOffTorch];
+                }
+            }
         });
     });
 }
