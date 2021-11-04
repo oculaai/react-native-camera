@@ -51,6 +51,7 @@ import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.ScaleGestureDetector.OnScaleGestureListener
 import org.reactnative.camera.tasks.ResolveTakenPictureAsyncTask
 import android.os.AsyncTask
+import android.util.Log
 import android.view.GestureDetector
 import com.facebook.react.bridge.Arguments
 import com.google.zxing.BarcodeFormat
@@ -94,7 +95,16 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
     var textRecognizerTaskLock = false
 
     // timestamp
-    // torch fire period props
+    private var startRecordingUnixTime: Long? = null
+    private var endRecordingUnixTime: Long? = null
+    private var torchOnUnixTime: Long? = null
+    private var torchOffUnixTime: Long? = null
+
+    // torch period props
+    private var torchOnAt = 0.0f
+    private var torchOffAt = 0.0f
+    private var scanDuration = 0.0f
+
     // Scanning-related properties
     private var mMultiFormatReader: MultiFormatReader? = null
     private var mFaceDetector: RNFaceDetector? = null
@@ -159,6 +169,10 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
         // React handles this for us, so we don't need to call super.requestLayout();
     }
 
+    fun getCurrentUnixTime(): Long {
+        return System.currentTimeMillis() / 1L;
+    }
+
     fun setBarCodeTypes(barCodeTypes: List<String>?) {
         mBarCodeTypes = barCodeTypes
         initBarcodeReader()
@@ -217,7 +231,16 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                     orientation = options.getInt("orientation")
                 }
 
-                // TODO
+                if (options.hasKey("maxDuration")) {
+                    scanDuration = options.getDouble("maxDuration").toFloat()
+                }
+                if (options.hasKey("torchOnAt")) {
+                    torchOnAt = options.getDouble("torchOnAt").toFloat()
+                }
+                if (options.hasKey("torchOffAt")) {
+                    torchOffAt = options.getDouble("torchOffAt").toFloat()
+                }
+
                 if (super@RNCameraView.record(
                         path,
                         maxDuration * 1000,
@@ -675,17 +698,48 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                 deviceOrientation: Int
             ) {
                 val result = Arguments.createMap()
+                startRecordingUnixTime = getCurrentUnixTime()
+
                 result.putInt("videoOrientation", videoOrientation)
                 result.putInt("deviceOrientation", deviceOrientation)
                 result.putString("uri", RNFileUtils.uriFromFile(File(path)).toString())
                 RNCameraViewHelper.emitRecordingStartEvent(cameraView, result)
 
-                // TODO
+                var torchDelayInSeconds = 1
+                if (torchOnAt.compareTo(3) == 0) {
+                    torchDelayInSeconds = 3
+                }
+                mBgHandler.postDelayed({
+                    try {
+                        super@RNCameraView.setFlash(FLASH_TORCH)
+                        torchOnUnixTime = getCurrentUnixTime()
+                    } catch (e: Exception) {
+                        Log.i("TORCH_ERR_", e.toString())
+                    }
+                }, torchDelayInSeconds.toLong())
+
+                var forceTorchOffDelayInSeconds = 6
+                if (torchOffAt.compareTo(8) == 0) {
+                    forceTorchOffDelayInSeconds = 8
+                }
+                mBgHandler.postDelayed({
+                    try {
+                        if (scanDuration.compareTo(14) > 0) {
+                            super@RNCameraView.setFlash(FLASH_OFF)
+                            torchOffUnixTime = getCurrentUnixTime()
+                        }
+                    } catch (e: Exception) {
+                        Log.i("TORCH_ERR_", e.toString())
+                    }
+                }, forceTorchOffDelayInSeconds.toLong())
             }
 
             override fun onRecordingEnd(cameraView: CameraView) {
+                endRecordingUnixTime = getCurrentUnixTime()
+                if (scanDuration.compareTo(14) < 0) {
+                    torchOffUnixTime = getCurrentUnixTime()
+                }
                 RNCameraViewHelper.emitRecordingEndEvent(cameraView)
-                // TODO
             }
 
             override fun onVideoRecorded(
@@ -702,7 +756,11 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                         result.putInt("deviceOrientation", deviceOrientation)
                         result.putString("uri", RNFileUtils.uriFromFile(File(path)).toString())
 
-                        // TODO
+                        result.putString("recordingStart", startRecordingUnixTime.toString())
+                        result.putString("recordingEnd", endRecordingUnixTime.toString())
+                        result.putString("torchOn", torchOnUnixTime.toString())
+                        result.putString("torchOff", torchOffUnixTime.toString())
+
                         mVideoRecordedPromise!!.resolve(result)
                     } else {
                         mVideoRecordedPromise!!.reject(
