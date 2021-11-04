@@ -20,11 +20,14 @@ import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.camera2.CaptureRequest;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.media.MediaActionSound;
 import android.os.Build;
 import android.os.Handler;
+
+import androidx.annotation.RequiresApi;
 import androidx.collection.SparseArrayCompat;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -46,7 +49,8 @@ import org.reactnative.camera.utils.ObjectUtils;
 
 @SuppressWarnings("deprecation")
 class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
-                                                MediaRecorder.OnErrorListener, Camera.PreviewCallback {
+                                                MediaRecorder.OnErrorListener,
+                                                Camera.PreviewCallback {
 
     private static final int INVALID_CAMERA_ID = -1;
 
@@ -251,6 +255,7 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
                 setUpPreview();
                 if(mShowingPreview){
                     startCameraPreview();
+                    setupAudioTrackingWhenPreview();
                 }
             }
             return true;
@@ -331,6 +336,45 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
         }
     }
 
+    private void setupAudioTrackingWhenPreview() {
+        if (mMediaRecorder == null) {
+            mMediaRecorder = new MediaRecorder();
+            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            mMediaRecorder.setOutputFile("/dev/null");
+            try {
+                mMediaRecorder.prepare();
+                mMediaRecorder.start();
+            } catch (IOException ex) {
+                Log.e("CAMERA_1::", "setupAudioTrackingWhenPreview got error", ex);
+                mMediaRecorder.reset();
+//                mMediaRecorder.release();
+            }
+        }
+    }
+
+    private void cleanAudioTracking() {
+        synchronized(this) {
+            if (mMediaRecorder != null) {
+                try {
+                    mMediaRecorder.stop();
+                } catch (RuntimeException ex) {
+                    Log.e("CAMERA_1::", "stopMediaRecorder stop failed", ex);
+                }
+
+                try {
+                    mMediaRecorder.reset();
+//                    mMediaRecorder.release();
+                } catch (RuntimeException ex) {
+                    Log.e("CAMERA_1::", "stopMediaRecorder reset failed", ex);
+                }
+
+                mMediaRecorder = null;
+            }
+        }
+    }
+
     private void startCameraPreview() {
         // only start the preview if we didn't yet.
         if(!mIsPreviewActive && mCamera != null){
@@ -402,6 +446,16 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
     }
 
     @Override
+    public double getAudioLevel() {
+        if (mMediaRecorder != null) {
+            return 20 * Math.log10(mMediaRecorder.getMaxAmplitude() / 2700.0);
+        } else {
+            return -1;
+        }
+    }
+
+
+    @Override
     void setCameraId(String id) {
 
         if(!ObjectUtils.equals(_mCameraId, id)){
@@ -429,6 +483,10 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
     @Override
     String getCameraId() {
         return _mCameraId;
+    }
+
+    public String getCameraSettings() {
+        return mCamera.getParameters().flatten();
     }
 
     @Override
@@ -680,6 +738,12 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
         return mWhiteBalance;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    public CaptureRequest.Key<Float> getLensAperture() {
+        return CaptureRequest.LENS_APERTURE;
+    }
+
     @Override
     void setScanning(boolean isScanning) {
         if (isScanning == mIsScanning) {
@@ -853,6 +917,8 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
                 mOrientation = orientation;
             }
             try {
+                cleanAudioTracking();
+
                 setUpMediaRecorder(path, maxDuration, maxFileSize, recordAudio, profile, fps);
                 mMediaRecorder.prepare();
                 mMediaRecorder.start();
@@ -1581,7 +1647,9 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
 
     private void setUpMediaRecorder(String path, int maxDuration, int maxFileSize, boolean recordAudio, CamcorderProfile profile, int fps) {
 
-        mMediaRecorder = new MediaRecorder();
+        if (mMediaRecorder == null) {
+            mMediaRecorder = new MediaRecorder();
+        }
         mCamera.unlock();
 
         mMediaRecorder.setCamera(mCamera);

@@ -94,6 +94,11 @@ class TextureViewPreview extends PreviewImpl {
     }
 
     @Override
+    double getAudioLevel() {
+        return 0;
+    }
+
+    @Override
     void setDisplayOrientation(int displayOrientation) {
         mDisplayOrientation = displayOrientation;
         configureTransform();

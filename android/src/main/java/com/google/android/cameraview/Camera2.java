@@ -65,7 +65,8 @@ import org.reactnative.camera.utils.ObjectUtils;
 
 @SuppressWarnings("MissingPermission")
 @TargetApi(21)
-class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
+class Camera2 extends CameraViewImpl
+        implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
 
     private static final String TAG = "Camera2";
 
@@ -705,6 +706,11 @@ class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, Me
     }
 
     @Override
+    public CaptureRequest.Key<Float> getLensAperture() {
+        return CaptureRequest.LENS_APERTURE;
+    }
+
+    @Override
     void setPlaySoundOnCapture(boolean playSoundOnCapture) {
         mPlaySoundOnCapture = playSoundOnCapture;
     }
@@ -1022,6 +1028,20 @@ class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, Me
     @Override
     public Size getPreviewSize() {
         return new Size(mPreview.getWidth(), mPreview.getHeight());
+    }
+
+    @Override
+    public String getCameraSettings() {
+        return null;
+    }
+
+    @Override
+    public double getAudioLevel() {
+        if (mMediaRecorder != null) {
+            return 20 * Math.log10(mMediaRecorder.getMaxAmplitude() / 2700.0);
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -1359,6 +1379,10 @@ class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, Me
             Log.e(TAG, "Cannot capture a still picture.", e);
         }
     }
+
+//    public String getCameraSettings() {
+//        return mCamera.getParameters().flatten();
+//    }
 
     private int getOutputRotation() {
         @SuppressWarnings("ConstantConditions")

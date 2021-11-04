@@ -1,8 +1,13 @@
 package org.reactnative.camera;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -10,6 +15,7 @@ import android.widget.Toast;
 
 import com.facebook.react.bridge.*;
 import com.facebook.react.common.build.ReactBuildConfig;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.uimanager.NativeViewHierarchyManager;
 import com.facebook.react.uimanager.UIBlock;
 import com.facebook.react.uimanager.UIManagerModule;
@@ -32,10 +38,16 @@ import java.util.Set;
 import java.util.SortedSet;
 
 
-public class CameraModule extends ReactContextBaseJavaModule {
+public class CameraModule
+        extends ReactContextBaseJavaModule
+        implements SensorEventListener, LifecycleEventListener {
   private static final String TAG = "CameraModule";
 
-  private ScopedContext mScopedContext;
+    // light check handling
+    private SensorManager sensorManager;
+    private Sensor pressure;
+
+    private ScopedContext mScopedContext;
   static final int VIDEO_2160P = 0;
   static final int VIDEO_1080P = 1;
   static final int VIDEO_720P = 2;
@@ -71,7 +83,15 @@ public class CameraModule extends ReactContextBaseJavaModule {
 
   public CameraModule(ReactApplicationContext reactContext) {
     super(reactContext);
+    reactContext.addLifecycleEventListener(this);
     mScopedContext = new ScopedContext(reactContext);
+
+    sensorManager = (SensorManager) reactContext.getSystemService(Context.SENSOR_SERVICE);
+    pressure = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+
+
+//    Log.i("_123_INIT_SENSOR", sensorManager.toString());
+//    Log.i("_123_INIT_pressure", pressure.toString());
   }
 
   public ScopedContext getScopedContext() {
@@ -545,4 +565,36 @@ public class CameraModule extends ReactContextBaseJavaModule {
       }
     }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
   }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        float millibarsOfPressure = sensorEvent.values[0];
+        WritableMap params = Arguments.createMap();
+        params.putDouble("lightLevel", millibarsOfPressure);
+//        Log.i("_123__LIGHT_CHANGED", String.valueOf(millibarsOfPressure));
+
+        getReactApplicationContext()
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit("onLightChanged", params);
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+
+    @Override
+    public void onHostResume() {
+        sensorManager.registerListener(this, pressure, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    public void onHostPause() {
+        sensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onHostDestroy() {
+
+    }
 }
