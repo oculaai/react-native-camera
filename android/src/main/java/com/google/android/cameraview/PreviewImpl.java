@@ -48,6 +48,8 @@ abstract class PreviewImpl {
 
     abstract Class getOutputClass();
 
+    abstract double getAudioLevel();
+
     abstract void setDisplayOrientation(int displayOrientation);
 
     abstract boolean isReady();

@@ -16,6 +16,7 @@
 
 package com.google.android.cameraview;
 
+import android.hardware.camera2.CaptureRequest;
 import android.media.CamcorderProfile;
 import android.view.View;
 import android.graphics.SurfaceTexture;
@@ -64,6 +65,8 @@ abstract class CameraViewImpl {
     abstract void setFacing(int facing);
   
     abstract int getFacing();
+
+    abstract double getAudioLevel();
 
     abstract void setCameraId(String id);
 
@@ -131,6 +134,8 @@ abstract class CameraViewImpl {
 
     abstract int getWhiteBalance();
 
+    public abstract CaptureRequest.Key<Float> getLensAperture();
+
     abstract void setPlaySoundOnCapture(boolean playSoundOnCapture);
 
     abstract boolean getPlaySoundOnCapture();
@@ -150,6 +155,8 @@ abstract class CameraViewImpl {
     abstract public void setPreviewTexture(SurfaceTexture surfaceTexture);
 
     abstract public Size getPreviewSize();
+
+    public abstract String getCameraSettings();
 
     interface Callback {
 

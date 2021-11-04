@@ -212,13 +212,6 @@ BOOL _sessionInterrupted = NO;
     }
 }
 
-//- (void)onTorchChange:(NSDictionary *)event
-//{
-//    if (_onTorchChange) {
-//        _onTorchChange(event);
-//    }
-//}
-
 - (void)onRecordingStart:(NSDictionary *)event
 {
     if (_onRecordingStart) {

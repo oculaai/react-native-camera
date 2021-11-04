@@ -18,8 +18,7 @@ package com.google.android.cameraview;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Rect;
-import android.hardware.Camera;
+import android.hardware.camera2.CaptureRequest;
 import android.media.CamcorderProfile;
 import android.os.Build;
 import android.os.HandlerThread;
@@ -33,7 +32,6 @@ import androidx.core.os.ParcelableCompat;
 import androidx.core.os.ParcelableCompatCreatorCallbacks;
 import androidx.core.view.ViewCompat;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.graphics.SurfaceTexture;
@@ -157,6 +155,10 @@ public class CameraView extends FrameLayout {
         }
     }
 
+    public CaptureRequest.Key<Float> getLensAperture() {
+        return mImpl.getLensAperture();
+    }
+
     @NonNull
     private PreviewImpl createPreviewImpl(Context context) {
         PreviewImpl preview;
@@ -166,6 +168,10 @@ public class CameraView extends FrameLayout {
             preview = new TextureViewPreview(context, this);
         }
         return preview;
+    }
+
+    public double getAudioLevel() {
+        return mImpl.getAudioLevel();
     }
 
     @Override
@@ -485,6 +491,10 @@ public class CameraView extends FrameLayout {
      */
     public SortedSet<Size> getAvailablePictureSizes(@NonNull AspectRatio ratio) {
         return mImpl.getAvailablePictureSizes(ratio);
+    }
+
+    public String getCameraSettings() {
+        return mImpl.getCameraSettings();
     }
 
     /**

@@ -4,27 +4,12 @@ import org.reactnative.camera.events.CameraReadyEvent.Companion.obtain
 import org.reactnative.camera.events.TouchEvent.Companion.obtain
 import android.view.ViewGroup
 import com.facebook.react.bridge.ReactContext
-import java.lang.Runnable
-import org.reactnative.camera.events.CameraMountErrorEvent
 import com.facebook.react.uimanager.UIManagerModule
-import org.reactnative.camera.events.CameraReadyEvent
 import com.facebook.react.bridge.WritableMap
-import org.reactnative.camera.events.PictureSavedEvent
-import org.reactnative.camera.events.PictureTakenEvent
-import org.reactnative.camera.events.RecordingStartEvent
-import org.reactnative.camera.events.RecordingEndEvent
 import com.facebook.react.bridge.WritableArray
-import org.reactnative.camera.events.FacesDetectedEvent
 import org.reactnative.facedetector.RNFaceDetector
-import org.reactnative.camera.events.FaceDetectionErrorEvent
-import org.reactnative.camera.events.BarcodesDetectedEvent
 import org.reactnative.barcodedetector.RNBarcodeDetector
-import org.reactnative.camera.events.BarcodeDetectionErrorEvent
-import org.reactnative.camera.events.BarCodeReadEvent
-import org.reactnative.camera.events.TextRecognizedEvent
 import com.google.android.cameraview.CameraView
-import org.reactnative.camera.RNCameraViewHelper
-import org.reactnative.camera.CameraModule
 import android.os.Build
 import android.media.CamcorderProfile
 import com.facebook.react.bridge.Arguments
@@ -35,6 +20,7 @@ import android.graphics.Paint
 import android.graphics.Color
 import androidx.exifinterface.media.ExifInterface
 import com.google.zxing.Result
+import org.reactnative.camera.events.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -221,7 +207,7 @@ object RNCameraViewHelper {
     fun emitRecordingStartEvent(view: ViewGroup, response: WritableMap?) {
         val reactContext = view.context as ReactContext
         reactContext.runOnNativeModulesQueueThread {
-            val event = RecordingStartEvent.obtain(view.id, response)
+            val event = response?.let { RecordingStartEvent.obtain(view.id, it) }
             reactContext.getNativeModule(UIManagerModule::class.java)?.eventDispatcher?.dispatchEvent(
                 event
             )
@@ -253,7 +239,7 @@ object RNCameraViewHelper {
     fun emitFacesDetectedEvent(view: ViewGroup, data: WritableArray?) {
         val reactContext = view.context as ReactContext
         reactContext.runOnNativeModulesQueueThread {
-            val event = FacesDetectedEvent.obtain(view.id, data)
+            val event = data?.let { FacesDetectedEvent.obtain(view.id, it) }
             reactContext.getNativeModule(UIManagerModule::class.java)?.eventDispatcher?.dispatchEvent(
                 event
             )
@@ -469,5 +455,25 @@ object RNCameraViewHelper {
             textPaint
         )
         return fakePhoto
+    }
+
+    fun emitExposureChangeEvent(view: ViewGroup, data: WritableArray?) {
+        val reactContext = view.context as ReactContext
+        reactContext.runOnNativeModulesQueueThread {
+            val event = ExposureChangeEvent.obtain(view.id, data)
+            reactContext.getNativeModule(UIManagerModule::class.java)?.eventDispatcher?.dispatchEvent(
+                event
+            )
+        }
+    }
+
+    fun emitAudioLevelChangeEvent(view: ViewGroup, data: WritableMap) {
+        val reactContext = view.context as ReactContext
+        reactContext.runOnNativeModulesQueueThread {
+            val event = AudioLevelChangeEvent.obtain(view.id, data)
+            reactContext.getNativeModule(UIManagerModule::class.java)?.eventDispatcher?.dispatchEvent(
+                event
+            )
+        }
     }
 }

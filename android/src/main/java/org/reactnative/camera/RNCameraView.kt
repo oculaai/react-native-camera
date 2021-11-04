@@ -4,11 +4,6 @@ import android.Manifest
 import com.facebook.react.uimanager.ThemedReactContext
 import com.google.android.cameraview.CameraView
 import com.facebook.react.bridge.LifecycleEventListener
-import org.reactnative.camera.tasks.BarCodeScannerAsyncTaskDelegate
-import org.reactnative.camera.tasks.FaceDetectorAsyncTaskDelegate
-import org.reactnative.camera.tasks.BarcodeDetectorAsyncTaskDelegate
-import org.reactnative.camera.tasks.TextRecognizerAsyncTaskDelegate
-import org.reactnative.camera.tasks.PictureSavedDelegate
 import java.util.Queue
 import com.facebook.react.bridge.Promise
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -20,20 +15,16 @@ import kotlin.jvm.Volatile
 import com.google.zxing.MultiFormatReader
 import org.reactnative.facedetector.RNFaceDetector
 import org.reactnative.barcodedetector.RNBarcodeDetector
-import android.view.View
 import android.graphics.Color
 import android.annotation.SuppressLint
-import java.lang.Runnable
 import java.lang.Exception
 import com.facebook.react.bridge.WritableMap
-import org.reactnative.camera.RNCameraViewHelper
 import org.reactnative.camera.utils.RNFileUtils
 import android.media.CamcorderProfile
 import java.io.IOException
 import java.util.EnumMap
 import com.google.zxing.DecodeHintType
 import java.util.EnumSet
-import org.reactnative.camera.CameraModule
 import android.graphics.YuvImage
 import java.io.ByteArrayOutputStream
 import android.graphics.Rect
@@ -44,28 +35,23 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.content.res.Resources
 import android.graphics.ImageFormat
-import android.util.DisplayMetrics
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.ScaleGestureDetector.OnScaleGestureListener
-import org.reactnative.camera.tasks.ResolveTakenPictureAsyncTask
 import android.os.AsyncTask
 import android.util.Log
 import android.view.GestureDetector
 import com.facebook.react.bridge.Arguments
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.Result
-import org.reactnative.camera.tasks.BarCodeScannerAsyncTask
-import org.reactnative.camera.tasks.FaceDetectorAsyncTask
-import org.reactnative.camera.tasks.BarcodeDetectorAsyncTask
-import org.reactnative.camera.tasks.TextRecognizerAsyncTask
+import org.reactnative.camera.tasks.*
 import kotlin.experimental.inv
 
 class RNCameraView(private val mThemedReactContext: ThemedReactContext) : CameraView(
     mThemedReactContext, true
 ), LifecycleEventListener, BarCodeScannerAsyncTaskDelegate, FaceDetectorAsyncTaskDelegate,
-    BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
+    BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate,
+    AudioLevelChangeDelegate, ExposureChangeDelegate {
     private val mPictureTakenPromises: Queue<Promise> = ConcurrentLinkedQueue()
     private val mPictureTakenOptions: MutableMap<Promise, ReadableMap> = ConcurrentHashMap()
     private val mPictureTakenDirectories: MutableMap<Promise, File> = ConcurrentHashMap()
@@ -203,6 +189,8 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
     }
 
     fun record(options: ReadableMap, promise: Promise, cacheDirectory: File?) {
+        Log.i("_123_AUDIO_LEVEL", super@RNCameraView.getAudioLevel().toString())
+
         mBgHandler.post {
             try {
                 val path =
@@ -647,6 +635,29 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
         addCallback(object : Callback() {
             override fun onCameraOpened(cameraView: CameraView) {
                 RNCameraViewHelper.emitCameraReadyEvent(cameraView)
+
+                val checkAudioLevelIntervalSeconds = 1
+                fun fetchAudioLevel() {
+                    val audioLevel = super@RNCameraView.getAudioLevel()
+
+                    Log.i("_123__AUDIO_LEVEL", audioLevel.toString())
+                    val audioLevelResult = Arguments.createMap()
+                    audioLevelResult.putString("averagePowerLevel", audioLevel.toString())
+                    audioLevelResult.putString("audioLevelResult", "0")
+                    RNCameraViewHelper.emitAudioLevelChangeEvent(cameraView, audioLevelResult)
+                }
+                val runFetchAudioLevel: Runnable = object : Runnable {
+                    override fun run() {
+                        try {
+                            fetchAudioLevel()
+                        } catch (e: Exception) {
+                            Log.i("FETCH_AUDIO_ERR_", e.toString())
+                        } finally {
+                            mBgHandler.postDelayed(this, (checkAudioLevelIntervalSeconds * 1000).toLong())
+                        }
+                    }
+                }
+                runFetchAudioLevel.run()
             }
 
             override fun onMountError(cameraView: CameraView) {
@@ -716,7 +727,7 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                     } catch (e: Exception) {
                         Log.i("TORCH_ERR_", e.toString())
                     }
-                }, torchDelayInSeconds.toLong())
+                }, (torchDelayInSeconds * 1000).toLong())
 
                 var forceTorchOffDelayInSeconds = 6
                 if (torchOffAt.compareTo(8) == 0) {
@@ -731,7 +742,7 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                     } catch (e: Exception) {
                         Log.i("TORCH_ERR_", e.toString())
                     }
-                }, forceTorchOffDelayInSeconds.toLong())
+                }, (forceTorchOffDelayInSeconds * 1000).toLong())
             }
 
             override fun onRecordingEnd(cameraView: CameraView) {
@@ -875,5 +886,13 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                 }
             }
         })
+    }
+
+    override fun onAudioLevelChange(response: WritableMap) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onExposeChange(response: WritableMap) {
+        TODO("Not yet implemented")
     }
 }

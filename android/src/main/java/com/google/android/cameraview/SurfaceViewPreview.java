@@ -77,6 +77,11 @@ class SurfaceViewPreview extends PreviewImpl {
     }
 
     @Override
+    double getAudioLevel() {
+        return 0;
+    }
+
+    @Override
     void setDisplayOrientation(int displayOrientation) {
     }
 
