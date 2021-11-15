@@ -50,8 +50,7 @@ import kotlin.experimental.inv
 class RNCameraView(private val mThemedReactContext: ThemedReactContext) : CameraView(
     mThemedReactContext, true
 ), LifecycleEventListener, BarCodeScannerAsyncTaskDelegate, FaceDetectorAsyncTaskDelegate,
-    BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate,
-    AudioLevelChangeDelegate, ExposureChangeDelegate {
+    BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
     private val mPictureTakenPromises: Queue<Promise> = ConcurrentLinkedQueue()
     private val mPictureTakenOptions: MutableMap<Promise, ReadableMap> = ConcurrentHashMap()
     private val mPictureTakenDirectories: MutableMap<Promise, File> = ConcurrentHashMap()
@@ -189,7 +188,7 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
     }
 
     fun record(options: ReadableMap, promise: Promise, cacheDirectory: File?) {
-        Log.i("_123_AUDIO_LEVEL", super@RNCameraView.getAudioLevel().toString())
+//        Log.i("_123_AUDIO_LEVEL", super@RNCameraView.getAudioLevel().toString())
 
         mBgHandler.post {
             try {
@@ -889,13 +888,5 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                 }
             }
         })
-    }
-
-    override fun onAudioLevelChange(response: WritableMap) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onExposeChange(response: WritableMap) {
-        TODO("Not yet implemented")
     }
 }

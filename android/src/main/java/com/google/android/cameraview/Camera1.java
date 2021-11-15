@@ -255,7 +255,6 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
                 setUpPreview();
                 if(mShowingPreview){
                     startCameraPreview();
-                    setupAudioTrackingWhenPreview();
                 }
             }
             return true;
@@ -337,42 +336,42 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
     }
 
     private void setupAudioTrackingWhenPreview() {
-        if (mMediaRecorder == null) {
-            mMediaRecorder = new MediaRecorder();
-            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-            mMediaRecorder.setOutputFile("/dev/null");
-            try {
-                mMediaRecorder.prepare();
-                mMediaRecorder.start();
-            } catch (IOException ex) {
-                Log.e("CAMERA_1::", "setupAudioTrackingWhenPreview got error", ex);
-                mMediaRecorder.reset();
-//                mMediaRecorder.release();
-            }
-        }
+//        if (mMediaRecorder == null) {
+//            mMediaRecorder = new MediaRecorder();
+//            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+//            mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+//            mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+//            mMediaRecorder.setOutputFile("/dev/null");
+//            try {
+//                mMediaRecorder.prepare();
+//                mMediaRecorder.start();
+//            } catch (IOException ex) {
+//                Log.e("CAMERA_1::", "setupAudioTrackingWhenPreview got error", ex);
+//                mMediaRecorder.reset();
+////                mMediaRecorder.release();
+//            }
+//        }
     }
 
     private void cleanAudioTracking() {
-        synchronized(this) {
-            if (mMediaRecorder != null) {
-                try {
-                    mMediaRecorder.stop();
-                } catch (RuntimeException ex) {
-                    Log.e("CAMERA_1::", "stopMediaRecorder stop failed", ex);
-                }
-
-                try {
-                    mMediaRecorder.reset();
-//                    mMediaRecorder.release();
-                } catch (RuntimeException ex) {
-                    Log.e("CAMERA_1::", "stopMediaRecorder reset failed", ex);
-                }
-
-                mMediaRecorder = null;
-            }
-        }
+//        synchronized(this) {
+//            if (mMediaRecorder != null) {
+//                try {
+//                    mMediaRecorder.stop();
+//                } catch (RuntimeException ex) {
+//                    Log.e("CAMERA_1::", "stopMediaRecorder stop failed", ex);
+//                }
+//
+//                try {
+//                    mMediaRecorder.reset();
+////                    mMediaRecorder.release();
+//                } catch (RuntimeException ex) {
+//                    Log.e("CAMERA_1::", "stopMediaRecorder reset failed", ex);
+//                }
+//
+//                mMediaRecorder = null;
+//            }
+//        }
     }
 
     private void startCameraPreview() {
@@ -917,8 +916,6 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
                 mOrientation = orientation;
             }
             try {
-                cleanAudioTracking();
-
                 setUpMediaRecorder(path, maxDuration, maxFileSize, recordAudio, profile, fps);
                 mMediaRecorder.prepare();
                 mMediaRecorder.start();
