@@ -414,7 +414,7 @@ BOOL _sessionInterrupted = NO;
             [device setFlashMode:self.flashMode];
 //            [device setFlashMode:AVCaptureFlashModeOff];
             self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-            RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
+//            RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
             
             
 //            [self sendEventWithName:@"onTorchChange" body:@{@"flashMode": @([self.flashMode])}];
@@ -471,8 +471,9 @@ BOOL _sessionInterrupted = NO;
             [device setTorchMode:AVCaptureTorchModeOff];
         }
 //        [device setFlashMode:AVCaptureFlashModeOff];
-        self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-        RCTLog(@"torchOffTiemstamp %@%@", self.torchOffTimestamp);
+        NSNumber *torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
+//        RCTLog(@"torchOffTiemstamp %@%@", torchOffTimestamp);
+        self.torchOffTimestamp = torchOffTimestamp;
     }];
 }
 
@@ -2086,11 +2087,11 @@ BOOL _sessionInterrupted = NO;
     }
     if (success && self.videoRecordedResolve != nil) {
         self.endRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-        RCTLogWarn(@"endRecordingTimestamp_2 @", self.endRecordingTimestamp);
+//        RCTLogWarn(@"endRecordingTimestamp_2 @", self.endRecordingTimestamp);
         
         
         self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-        RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
+//        RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
         
         NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
 
