@@ -447,7 +447,10 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
     @Override
     public double getAudioLevel() {
         if (mMediaRecorder != null) {
-            return 20 * Math.log10(mMediaRecorder.getMaxAmplitude() / 2700.0);
+            int amplitude = mMediaRecorder.getMaxAmplitude();
+            double amplitudeDb = 20 * Math.log10((double)Math.abs(amplitude));
+            //20 * Math.log10(mMediaRecorder.getMaxAmplitude() / 2700.0);
+            return amplitudeDb;
         } else {
             return -1;
         }
