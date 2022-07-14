@@ -669,7 +669,8 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
             override fun onPictureTaken(
                 cameraView: CameraView,
                 data: ByteArray,
-                deviceOrientation: Int
+                deviceOrientation: Int,
+                softwareRotation: Int
             ) {
                 val promise = mPictureTakenPromises.poll()
                 val options = mPictureTakenOptions.remove(promise)
@@ -684,6 +685,7 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                         options,
                         cacheDirectory,
                         deviceOrientation,
+                        softwareRotation,
                         this@RNCameraView
                     )
                         .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
@@ -694,6 +696,7 @@ class RNCameraView(private val mThemedReactContext: ThemedReactContext) : Camera
                         options,
                         cacheDirectory,
                         deviceOrientation,
+                        softwareRotation,
                         this@RNCameraView
                     )
                         .execute()

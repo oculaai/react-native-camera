@@ -196,7 +196,7 @@ class Camera2 extends CameraViewImpl
                     buffer.get(data);
                     if (image.getFormat() == ImageFormat.JPEG) {
                         // @TODO: implement deviceOrientation
-                        mCallback.onPictureTaken(data, 0);
+                        mCallback.onPictureTaken(data, 0, 0);
                     } else {
                         mCallback.onFramePreview(data, image.getWidth(), image.getHeight(), mDisplayOrientation);
                     }
@@ -209,7 +209,7 @@ class Camera2 extends CameraViewImpl
 
 
     private String mCameraId;
-    private String _mCameraId;
+    private String _mCameraId = "";
 
     private CameraCharacteristics mCameraCharacteristics;
 
