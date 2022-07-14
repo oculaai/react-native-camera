@@ -97,7 +97,7 @@ BOOL _sessionInterrupted = NO;
         self.invertImageData = true;
         _recordRequested = NO;
         _sessionInterrupted = NO;
-        
+
         self.startRecordingTimestamp = nil;
         self.endRecordingTimestamp = nil;
         self.torchOnTimestamp = nil;
@@ -392,9 +392,9 @@ BOOL _sessionInterrupted = NO;
             RCTLogWarn(@"%s: device doesn't support torch mode", __func__);
             return;
         }
-        
+
         self.torchOnTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-        
+
         RCTLog(@"torchOnTiemstamp %s", self.torchOnTimestamp);
 
         [self lockDevice:device andApplySettings:^{
@@ -415,14 +415,14 @@ BOOL _sessionInterrupted = NO;
 //            [device setFlashMode:AVCaptureFlashModeOff];
             self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
 //            RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
-            
-            
+
+
 //            [self sendEventWithName:@"onTorchChange" body:@{@"flashMode": @([self.flashMode])}];
-            
+
 //            [self onTorchChange:@{
 //                @"flashMode": @(self.flashMode),
 //            }];
-            
+
 //            if(self.onTorchChange){
 //                self.onTorchChange(@{
 //                    @"flashMode": @(self.flashMode),
@@ -443,9 +443,9 @@ BOOL _sessionInterrupted = NO;
             RCTLogWarn(@"%s: device doesn't support torch mode", __func__);
             return;
         }
-        
+
         self.torchOnTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-        
+
         RCTLog(@"torchOnTiemstamp %s", self.torchOnTimestamp);
 
         [self lockDevice:device andApplySettings:^{
@@ -806,11 +806,11 @@ BOOL _sessionInterrupted = NO;
 }
 
 - (void)takePictureWithOrientation:(NSDictionary *)options resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject{
-    
+
     UIInterfaceOrientation orientation = [self.sensorOrientationChecker getDeviceOrientation];
-    
+
     NSMutableDictionary *tmpOptions = [options mutableCopy];
-    
+
     if ([tmpOptions valueForKey:@"orientation"] == nil) {
         tmpOptions[@"orientation"] = [NSNumber numberWithInteger:[self.sensorOrientationChecker convertToAVCaptureVideoOrientation:orientation]];
     }
@@ -831,7 +831,7 @@ BOOL _sessionInterrupted = NO;
     // as it may change if multiple consecutive calls are done
     NSInteger orientation;
     NSNumber* deviceOrientation;
-    
+
     @synchronized (self) {
         if (!self.deviceOrientation) {
             [self takePictureWithOrientation:options resolve:resolve reject:reject];
@@ -840,11 +840,11 @@ BOOL _sessionInterrupted = NO;
 
         orientation = [options[@"orientation"] integerValue];
         deviceOrientation = self.deviceOrientation;
-        
+
         self.orientation = nil;
         self.deviceOrientation = nil;
     }
-    
+
     AVCaptureConnection *connection = [self.stillImageOutput connectionWithMediaType:AVMediaTypeVideo];
     [connection setVideoOrientation:orientation];
     @try {
@@ -1220,7 +1220,7 @@ BOOL _sessionInterrupted = NO;
         if (options[@"maxDuration"]) {
             Float64 maxDuration = [options[@"maxDuration"] floatValue];
             self.movieFileOutput.maxRecordedDuration = CMTimeMakeWithSeconds(maxDuration, 30);
-            
+
             NSLog(@"torch_check_duration log: %f", maxDuration);
         }
 
@@ -1311,17 +1311,17 @@ BOOL _sessionInterrupted = NO;
         else {
             path = [RNFileSystem generatePathInDirectory:[[RNFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"Camera"] withExtension:@".mov"];
         }
-        
+
         NSNumber *torchOnAt = nil;
         if (options[@"torchOnAt"]) {
             torchOnAt = options[@"torchOnAt"];
-            
+
 //            NSLog(@"torch_OnAt log: %@", torchOnAt);
         }
         NSNumber *torchOffAt = nil;
         if (options[@"torchOffAt"]) {
             torchOffAt = options[@"torchOffAt"];
-            
+
 //            NSLog(@"torch_OffAt log: %@", torchOnAt);
         }
         NSNumber *scanDuration = nil;
@@ -1361,12 +1361,12 @@ BOOL _sessionInterrupted = NO;
                 [self.movieFileOutput startRecordingToOutputFileURL:outputURL recordingDelegate:self];
                 self.videoRecordedResolve = resolve;
                 self.videoRecordedReject = reject;
-                
+
                 self.startRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
-                
+
                 NSLog(@"startRecordingTimestamp log: %@", self.startRecordingTimestamp);
 
-                
+
 //                NSLog(@"onRecordingStart event log: %@", @{
 //                    @"uri": outputURL.absoluteString,
 //                    @"videoOrientation": @([self.orientation integerValue]),
@@ -1389,33 +1389,33 @@ BOOL _sessionInterrupted = NO;
         });
 
         // TODO
-        
+
         // delay torch update after 1 second the recording start
         double torchDelayInSeconds = 1.5;
-        
+
         if (torchOnAt != nil) {
 //            NSLog(@"torch_DelayInSeconds_not nil log");
-            if (torchOnAt.intValue == 3) {
-                torchDelayInSeconds = 3.5;
+            if (torchOnAt.intValue == 2) {
+                torchDelayInSeconds = 2.5;
 //                NSLog(@"torch_DelayInSeconds_reassigned log");
             }
         }
-        
+
         NSLog(@"torch_DelayInSeconds log: %f", torchDelayInSeconds);
         NSLog(@"torch_Period log: %@", torchOnAt);
-        
+
         dispatch_time_t popTimeOfTorch = dispatch_time(DISPATCH_TIME_NOW, torchDelayInSeconds * NSEC_PER_SEC);
         dispatch_after(popTimeOfTorch, self.sessionQueue, ^{
             [self turnOnTorch];
         });
-        
-        double forceTorchOffDelayInSeconds = 6.5;
+
+        double torchOffDelayInSeconds = 7.5;
         if (torchOffAt != nil) {
-            if (torchOffAt.intValue == 8) {
-                torchDelayInSeconds = 8.5;
+            if (torchOffAt.intValue == 7) {
+                torchOffDelayInSeconds = 7.5;
             }
         }
-        dispatch_time_t timeForceTorchOff = dispatch_time(DISPATCH_TIME_NOW, forceTorchOffDelayInSeconds * NSEC_PER_SEC);
+        dispatch_time_t timeForceTorchOff = dispatch_time(DISPATCH_TIME_NOW, torchOffDelayInSeconds * NSEC_PER_SEC);
         dispatch_after(timeForceTorchOff, self.sessionQueue, ^{
             if (scanDuration != nil) {
                 if (scanDuration.intValue > 14) {
@@ -1432,7 +1432,7 @@ BOOL _sessionInterrupted = NO;
         if ([self.movieFileOutput isRecording]) {
             self.endRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
             RCTLogWarn(@"endRecordingTimestamp @", self.endRecordingTimestamp);
-            
+
 
             [self.movieFileOutput stopRecording];
             [self onRecordingEnd:@{}];
@@ -1581,7 +1581,7 @@ BOOL _sessionInterrupted = NO;
                 if(self.onAudioConnected){
                     self.onAudioConnected(nil);
                 }
-                
+
                 AVCaptureAudioDataOutput *audioDataOutput = [[AVCaptureAudioDataOutput alloc] init];
                 [audioDataOutput setSampleBufferDelegate:self queue:self.sessionQueue];
                 if ([self.session canAddOutput:audioDataOutput]) {
@@ -2088,11 +2088,11 @@ BOOL _sessionInterrupted = NO;
     if (success && self.videoRecordedResolve != nil) {
         self.endRecordingTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
 //        RCTLogWarn(@"endRecordingTimestamp_2 @", self.endRecordingTimestamp);
-        
-        
+
+
         self.torchOffTimestamp = @([[NSDate date] timeIntervalSince1970] * 1000);
 //        RCTLog(@"torchOffTiemstamp %s", self.torchOffTimestamp);
-        
+
         NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
 
         void (^resolveBlock)(void) = ^() {
@@ -2103,7 +2103,7 @@ BOOL _sessionInterrupted = NO;
         result[@"videoOrientation"] = @([self.orientation integerValue]);
         result[@"deviceOrientation"] = @([self.deviceOrientation integerValue]);
         result[@"isRecordingInterrupted"] = @(self.isRecordingInterrupted);
-        
+
         result[@"recordingStart"] = @([self.startRecordingTimestamp integerValue]);
         result[@"recordingEnd"] = @([self.endRecordingTimestamp integerValue]);
         result[@"torchOn"] = @([self.torchOnTimestamp integerValue]);
@@ -2142,7 +2142,7 @@ BOOL _sessionInterrupted = NO;
     self.deviceOrientation = nil;
     self.orientation = nil;
     self.isRecordingInterrupted = NO;
-    
+
     self.startRecordingTimestamp = nil;
     self.endRecordingTimestamp = nil;
     self.torchOnTimestamp = nil;
@@ -2525,9 +2525,9 @@ BOOL _sessionInterrupted = NO;
                 if ([connections count] > 0) {
                     // There should be only one connection to an AVCaptureAudioDataOutput.
                     AVCaptureConnection *connection = [connections objectAtIndex:0];
-                    
+
                     NSArray *audioChannels = connection.audioChannels;
-                    
+
                     for (AVCaptureAudioChannel *channel in audioChannels) {
                         if(self.onAudioLevelChange){
                             self.onAudioLevelChange(@{
